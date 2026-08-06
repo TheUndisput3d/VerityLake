@@ -1,0 +1,7 @@
+title = "VerityLake Gitleaks configuration"
+
+[allowlist]
+description = "LIVE_SMOKE.json contains S3 object metadata fields named key, not credentials."
+paths = [
+  '''^reports/LIVE_SMOKE\.json$'''
+]

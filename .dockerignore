@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+.venv
+.local
+__pycache__
+.pytest_cache
+.ruff_cache
+htmlcov
+.coverage
+*.egg-info
+backups
+models
+reports/runtime
+*.zip
+.terraform
+*.tfstate*
