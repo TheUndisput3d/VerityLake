@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=78", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "veritylake"
+version = "0.1.0"
+description = "A governed, local-first scrape-to-RAG lakehouse with reversible publication."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = "MIT"
+dynamic = ["dependencies"]
+
+[project.scripts]
+veritylake = "veritylake.cli:main"
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+veritylake = ["sql/*.sql", "ui/*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = ["integration: requires optional native libraries or services", "service: requires real MinIO and Chroma"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/integration/*" = ["E402"]
+
+[tool.coverage.run]
+source = ["veritylake"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

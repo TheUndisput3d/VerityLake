@@ -1,0 +1,9 @@
+-r requirements.txt
+pytest==9.0.2
+pytest-cov==7.0.0
+ruff==0.15.0
+moto[s3]==5.1.22
+PyYAML==6.0.3
+jsonschema==4.26.0
+pip-audit==2.9.0
+build==1.4.0
