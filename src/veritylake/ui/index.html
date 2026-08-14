@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="VerityLake is a governed, local-first RAG workspace with traceable evidence and versioned data releases.">
+  <title>VerityLake | Governed evidence workspace</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<a class="skip-link" href="#workspace">Skip to workspace</a>
+<header class="app-header">
+  <div class="header-inner">
+    <a class="brand" href="/" aria-label="VerityLake home">
+      <span class="brand-mark" aria-hidden="true">V</span>
+      <span class="brand-copy"><strong>VerityLake</strong><small>Governed RAG workspace</small></span>
+    </a>
+    <nav aria-label="Product navigation">
+      <a href="/docs">API reference</a>
+      <a href="/healthz">System health</a>
+      <span class="environment"><i></i> Local environment</span>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="page-title">
+    <div class="hero-copy">
+      <p class="eyebrow"><span>Evidence intelligence</span> / Operations console</p>
+      <h1 id="page-title">Grounded answers.<br><em>Auditable evidence.</em></h1>
+      <p class="lead">Query a quality-gated data release, inspect every supporting passage, and trace each answer back to its published source.</p>
+    </div>
+    <div class="trust-grid" aria-label="Platform guarantees">
+      <div><span>01</span><strong>Local inference</strong><small>Models stay on this machine</small></div>
+      <div><span>02</span><strong>Versioned releases</strong><small>Every answer names its snapshot</small></div>
+      <div><span>03</span><strong>Validated citations</strong><small>Quotes are checked against evidence</small></div>
+    </div>
+    <div class="pipeline" aria-label="Data flow">
+      <span>Runtime source</span><b>→</b><span>Delta lakehouse</span><b>→</b><span>Quality gate</span><b>→</b><span>Local RAG</span>
+    </div>
+  </section>
+
+  <section id="workspace" class="workspace" aria-label="VerityLake workspace">
+    <article class="panel question">
+      <div class="panel-heading">
+        <div><p class="panel-kicker">Query console</p><h2>Ask the lake</h2></div>
+        <span id="health" class="status-pill" data-state="checking">Checking readiness</span>
+      </div>
+
+      <div class="field">
+        <div class="label-row"><label for="key">API key</label><small>Kept only in this browser tab</small></div>
+        <input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste API_KEY from your local .env">
+      </div>
+
+      <div class="field">
+        <div class="label-row"><label for="question">Question</label><small id="char-count">0 / 1,000</small></div>
+        <textarea id="question" rows="5" maxlength="1000" placeholder="What is the listed price and availability of A Light in the Attic?"></textarea>
+      </div>
+
+      <div class="query-actions">
+        <label class="select-label" for="top-k">Evidence depth
+          <select id="top-k">
+            <option value="3">3 chunks</option>
+            <option value="4" selected>4 chunks</option>
+            <option value="6">6 chunks</option>
+            <option value="8">8 chunks</option>
+          </select>
+        </label>
+        <button id="ask" type="button"><span>Retrieve &amp; answer</span><b aria-hidden="true">→</b></button>
+      </div>
+      <p class="hint"><span>⌘ / Ctrl + Enter</span> to submit. The default catalog contains demonstration data.</p>
+    </article>
+
+    <aside class="panel snapshot" aria-labelledby="snapshot-title">
+      <div class="panel-heading">
+        <div><p class="panel-kicker">Data governance</p><h2 id="snapshot-title">Active release</h2></div>
+        <button id="refresh" class="secondary" type="button">Refresh</button>
+      </div>
+      <div class="snapshot-intro">
+        <span class="release-icon" aria-hidden="true"></span>
+        <p id="snapshot-message">Enter your API key, then refresh to inspect the release currently serving answers.</p>
+      </div>
+      <dl id="snapshot"></dl>
+      <div id="checks" class="quality-checks"></div>
+    </aside>
+  </section>
+
+  <section id="result" class="panel result" hidden aria-live="polite">
+    <div class="panel-heading result-heading">
+      <div><p class="panel-kicker">Grounded response</p><h2>Answer and evidence</h2></div>
+      <span id="answer-status" class="status-pill" data-state="checking"></span>
+    </div>
+    <div class="answer-shell"><p id="answer"></p></div>
+    <div class="sources-heading"><h3>Supporting sources</h3><span>Exact passages returned by retrieval</span></div>
+    <div id="sources"></div>
+    <p class="provenance" id="provenance"></p>
+  </section>
+
+  <footer>
+    <div><strong>VerityLake</strong><span>Evidence before answers.</span></div>
+    <p>Source IDs and quotes are validated against the active release. Citation presence does not prove factual entailment.</p>
+    <span>Local models · No tool execution · No paid API</span>
+  </footer>
+</main>
+<script src="/static/app.js" defer></script>
+</body>
+</html>
