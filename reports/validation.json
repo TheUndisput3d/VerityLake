@@ -1,0 +1,53 @@
+{
+  "project": "VerityLake",
+  "version": "0.1.0",
+  "validated_at": "2026-09-18T05:31:54.154604+00:00",
+  "python": "3.13.5",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "test_summary": {
+    "tests": 109,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 5,
+    "passed": 104
+  },
+  "pytest_suite_seconds": 1.648,
+  "coverage": {
+    "covered_lines": 1187,
+    "num_statements": 1367,
+    "percent_covered": 83.36272780717225,
+    "percent_covered_display": "83",
+    "missing_lines": 180,
+    "excluded_lines": 15,
+    "percent_statements_covered": 86.83247988295538,
+    "percent_statements_covered_display": "87",
+    "num_branches": 334,
+    "num_partial_branches": 75,
+    "covered_branches": 231,
+    "missing_branches": 103,
+    "percent_branches_covered": 69.16167664670658,
+    "percent_branches_covered_display": "69"
+  },
+  "checks": {
+    "python_ast_compile": "passed",
+    "yaml_json_syntax_and_selected_compose_security_invariants": "passed",
+    "javascript_syntax": "passed",
+    "shell_script_syntax": "passed",
+    "workflow_shell_blocks": {
+      "parsed": 37,
+      "status": "passed"
+    },
+    "real_docker_compose_build_and_start": "not_run",
+    "native_delta_duckdb_chroma_airflow_integration": "not_run",
+    "real_website_scrape_and_ollama_inference": "not_run",
+    "full_dag_4_core_300_second_target": "not_measured",
+    "ruff_dependency_container_secret_scanners": "not_run",
+    "terraform_validate_or_apply": "not_run",
+    "gpu_and_cloud_deployment": "not_run",
+    "backup_restore_and_signed_deploy_rehearsal": "not_run",
+    "browser_visual_or_accessibility_testing": "not_run"
+  },
+  "environment_limitations": "No Docker, Terraform or Ruff binary. Required native dependencies unavailable; container network/DNS prevented installation. Web documentation was checked separately.",
+  "test_scope": "Unit tests, mocked HTTP/SDK contracts, filesystem publication/concurrency, and test-double pipeline execution. No fake backend is exposed as a production fallback.",
+  "performance_claim": "No real pipeline, model-quality, cloud, recovery or four-core five-minute result is claimed."
+}

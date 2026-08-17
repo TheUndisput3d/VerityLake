@@ -1,0 +1,4 @@
+{"id": "price-attic", "question": "What is the listed price of A Light in the Attic?", "expected_urls": ["https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html"]}
+{"id": "availability-tipping", "question": "Is Tipping the Velvet available in stock?", "expected_urls": ["https://books.toscrape.com/catalogue/tipping-the-velvet_999/index.html"]}
+{"id": "rating-soumission", "question": "How many stars is Soumission rated?", "expected_urls": ["https://books.toscrape.com/catalogue/soumission_998/index.html"]}
+{"id": "description-sharp", "question": "What is Sharp Objects about?", "expected_urls": ["https://books.toscrape.com/catalogue/sharp-objects_997/index.html"]}

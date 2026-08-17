@@ -1,0 +1,206 @@
+{
+  "/healthz": {
+    "status": "alive",
+    "version": "0.1.0"
+  },
+  "/readyz": {
+    "status": "ready",
+    "run_id": "dd5080e801b95055a084a0b1696a5845",
+    "vector_count": 113
+  },
+  "/catalog": {
+    "run_id": "dd5080e801b95055a084a0b1696a5845",
+    "created_at": "2026-09-23T00:35:13.908938+00:00",
+    "published_at": "2026-09-23T00:36:40.633832+00:00",
+    "source_url": "https://books.toscrape.com/",
+    "source_terms_note": "Public scraping sandbox; source content is not licensed by this repository.",
+    "tables": {
+      "bronze": {
+        "created_at": "2026-09-23T00:35:55.123410+00:00",
+        "format": "delta",
+        "key": "bronze/dd5080e801b95055a084a0b1696a5845/documents",
+        "rows": 60,
+        "schema": {
+          "content_sha256": "string",
+          "doc_id": "string",
+          "etag": "string",
+          "fetched_at": "string",
+          "html_bytes": "int64",
+          "last_modified": "string",
+          "raw_key": "string",
+          "status": "int64",
+          "text": "string",
+          "title": "string",
+          "url": "string"
+        },
+        "uri": "s3://veritylake/bronze/dd5080e801b95055a084a0b1696a5845/documents",
+        "version": 0
+      },
+      "gold": {
+        "created_at": "2026-09-23T00:36:01.140441+00:00",
+        "format": "delta",
+        "key": "gold/dd5080e801b95055a084a0b1696a5845/chunks",
+        "rows": 113,
+        "schema": {
+          "char_end": "int64",
+          "char_start": "int64",
+          "chunk_id": "string",
+          "chunker_version": "string",
+          "content_sha256": "string",
+          "doc_id": "string",
+          "fetched_at": "string",
+          "ordinal": "int64",
+          "raw_key": "string",
+          "text": "string",
+          "title": "string",
+          "url": "string"
+        },
+        "uri": "s3://veritylake/gold/dd5080e801b95055a084a0b1696a5845/chunks",
+        "version": 0
+      },
+      "silver": {
+        "created_at": "2026-09-23T00:35:58.343941+00:00",
+        "format": "delta",
+        "key": "silver/dd5080e801b95055a084a0b1696a5845/documents",
+        "rows": 60,
+        "schema": {
+          "content_sha256": "string",
+          "doc_id": "string",
+          "etag": "string",
+          "fetched_at": "string",
+          "html_bytes": "int64",
+          "last_modified": "string",
+          "raw_key": "string",
+          "status": "int64",
+          "text": "string",
+          "title": "string",
+          "url": "string"
+        },
+        "uri": "s3://veritylake/silver/dd5080e801b95055a084a0b1696a5845/documents",
+        "version": 0
+      }
+    },
+    "quality": {
+      "embed": {
+        "checks": [
+          {
+            "name": "vector_count_matches_gold",
+            "observed": 113,
+            "passed": true
+          },
+          {
+            "name": "embedding_dimension_consistent",
+            "observed": 768,
+            "passed": true
+          },
+          {
+            "name": "self_retrieval_integrity",
+            "observed": 5,
+            "passed": true,
+            "threshold": 5
+          }
+        ],
+        "note": "Self-retrieval tests index integrity, not semantic answer quality.",
+        "passed": true
+      },
+      "gold": {
+        "checks": [
+          {
+            "name": "bounded_chunk_count",
+            "observed": 113,
+            "passed": true,
+            "threshold": 1500
+          },
+          {
+            "name": "unique_chunk_ids",
+            "passed": true
+          },
+          {
+            "name": "document_coverage",
+            "passed": true
+          },
+          {
+            "name": "exact_text_offsets",
+            "passed": true
+          },
+          {
+            "name": "chunk_text_size",
+            "passed": true
+          }
+        ],
+        "output_rows": 113,
+        "passed": true
+      },
+      "silver": {
+        "checks": [
+          {
+            "name": "minimum_documents",
+            "observed": 60,
+            "passed": true,
+            "threshold": 50
+          },
+          {
+            "name": "unique_document_ids",
+            "passed": true
+          },
+          {
+            "name": "unique_content",
+            "passed": true
+          },
+          {
+            "name": "rejection_budget",
+            "observed": 0.0,
+            "passed": true,
+            "threshold": 0.2
+          },
+          {
+            "name": "not_empty",
+            "passed": true
+          }
+        ],
+        "deduplicated_rows": 0,
+        "input_rows": 60,
+        "output_rows": 60,
+        "passed": true,
+        "quarantined_rows": 0
+      }
+    },
+    "catalog": {
+      "format": "duckdb",
+      "key": "catalog/runs/dd5080e801b95055a084a0b1696a5845/catalog.duckdb",
+      "uri": "s3://veritylake/catalog/runs/dd5080e801b95055a084a0b1696a5845/catalog.duckdb"
+    },
+    "embedding_identity": {
+      "digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+      "name": "nomic-embed-text:v1.5",
+      "prefix_version": "nomic-search-prefix-v1"
+    },
+    "vector_count": 113,
+    "git_sha": "development"
+  },
+  "/ask": {
+    "answer": "The listed price of A Light in the Attic is \u00a351.77 (excl. tax) and \u00a351.77 (incl. tax). [S1]",
+    "sources": [
+      {
+        "source_id": "S1",
+        "url": "https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html",
+        "title": "A Light in the Attic",
+        "chunk_id": "50501dc72df4fdb3cf9d376e545aa3d5927ce7f7b88d4859ae36bf62751f3f2f",
+        "doc_id": "8496bf8dba16cd78cb4e7d374e85bc7a20453a2f4506d1a96495b5b48b2feaf1",
+        "quote": "Price (excl. tax): \u00a351.77 Price (incl. tax): \u00a351.77 Tax: \u00a30.00",
+        "char_start": 0,
+        "char_end": 1248,
+        "fetched_at": "2026-09-23T00:35:18.961730+00:00",
+        "distance": 0.18759763
+      }
+    ],
+    "status": "answered",
+    "reason": null,
+    "run_id": "dd5080e801b95055a084a0b1696a5845",
+    "embedding_model": "nomic-embed-text:v1.5",
+    "generation_model": "qwen3:4b",
+    "citation_validation": "source IDs and verbatim quotes; not a proof of factual entailment"
+  },
+  "timestamp": "2026-09-23T00:45:09.418497+00:00",
+  "passed": true
+}

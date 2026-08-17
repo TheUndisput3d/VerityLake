@@ -1,0 +1,1 @@
+case_id,run_id,generation_model,embedding_digest,question,expected_answerable,observed_status,answer_supported_0_1,citation_correct_0_1,abstention_correct_0_1,reviewer,notes
