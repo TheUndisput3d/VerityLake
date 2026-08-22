@@ -1,0 +1,12 @@
+# syntax=docker/dockerfile:1.7
+ARG AIRFLOW_VERSION=3.2.0
+FROM apache/airflow:${AIRFLOW_VERSION}-python3.12
+ARG AIRFLOW_VERSION=3.2.0
+ARG GIT_SHA=development
+ENV GIT_SHA=${GIT_SHA} PYTHONDONTWRITEBYTECODE=1 ANONYMIZED_TELEMETRY=False
+COPY --chown=airflow:root requirements.txt pyproject.toml README.md /opt/veritylake/
+COPY --chown=airflow:root src /opt/veritylake/src
+RUN pip install --no-cache-dir "apache-airflow==${AIRFLOW_VERSION}" /opt/veritylake && pip check
+COPY --chown=airflow:root dags /opt/airflow/dags
+COPY --chown=airflow:root scripts /opt/veritylake/scripts
+RUN mkdir -p /opt/airflow/config && chmod 770 /opt/airflow/config
