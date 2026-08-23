@@ -1,0 +1,305 @@
+name: ${COMPOSE_PROJECT_NAME:-veritylake}
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-app-env: &app-env
+  ENVIRONMENT: ${ENVIRONMENT:-local}
+  STORAGE_BACKEND: s3
+  S3_ENDPOINT_URL: ${S3_ENDPOINT_URL:-http://minio:9000}
+  S3_REGION: ${S3_REGION:-us-east-1}
+  S3_BUCKET: ${S3_BUCKET:-veritylake}
+  SOURCE_URL: ${SOURCE_URL:-https://books.toscrape.com/}
+  SOURCE_ADAPTER: ${SOURCE_ADAPTER:-books}
+  SOURCE_PATH_PREFIX: ${SOURCE_PATH_PREFIX:-/}
+  SOURCE_RECORD_PATTERN: ${SOURCE_RECORD_PATTERN:?Run python3 scripts/bootstrap.py first}
+  SOURCE_SELECTOR: ${SOURCE_SELECTOR:-main}
+  MAX_PAGES: ${MAX_PAGES:-60}
+  MIN_DOCUMENTS: ${MIN_DOCUMENTS:-50}
+  MAX_FETCHES: ${MAX_FETCHES:-180}
+  REQUEST_INTERVAL_SECONDS: ${REQUEST_INTERVAL_SECONDS:-0.5}
+  MIN_TEXT_CHARS: ${MIN_TEXT_CHARS:-100}
+  MAX_REJECT_FRACTION: ${MAX_REJECT_FRACTION:-0.2}
+  MAX_SOURCE_AGE_HOURS: ${MAX_SOURCE_AGE_HOURS:-72}
+  CHUNK_WORDS: ${CHUNK_WORDS:-220}
+  CHUNK_OVERLAP_WORDS: ${CHUNK_OVERLAP_WORDS:-35}
+  MAX_CHUNKS: ${MAX_CHUNKS:-1500}
+  OLLAMA_BASE_URL: http://ollama:11434
+  EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text:v1.5}
+  LLM_MODEL: ${LLM_MODEL:-qwen3:4b}
+  EMBEDDING_BATCH_SIZE: ${EMBEDDING_BATCH_SIZE:-16}
+  MODEL_TIMEOUT_SECONDS: ${MODEL_TIMEOUT_SECONDS:-180}
+  RETRIEVAL_MAX_DISTANCE: ${RETRIEVAL_MAX_DISTANCE:-0.65}
+  CHROMA_HOST: chroma
+  CHROMA_PORT: 8000
+  CHROMA_MODE: http
+  ANONYMIZED_TELEMETRY: "False"
+  OPENLINEAGE_URL: ${OPENLINEAGE_URL:-}
+  LOG_FORMAT: ${LOG_FORMAT:-json}
+  GIT_SHA: ${GIT_SHA:-development}
+
+x-writer-env: &writer-env
+  <<: *app-env
+  AWS_ACCESS_KEY_ID: ${LAKE_WRITER_USER:?Run bootstrap}
+  AWS_SECRET_ACCESS_KEY: ${LAKE_WRITER_PASSWORD:?Run bootstrap}
+
+x-airflow-env: &airflow-env
+  <<: *writer-env
+  AIRFLOW__CORE__EXECUTOR: LocalExecutor
+  AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+  AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+  AIRFLOW__CORE__PARALLELISM: "2"
+  AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "1"
+  AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api:8080/execution/
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:${POSTGRES_PASSWORD:?Run bootstrap}@postgres/airflow
+  AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:?Run bootstrap}
+  AIRFLOW__API_AUTH__JWT_SECRET: ${AIRFLOW_JWT_SECRET:?Run bootstrap}
+  AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: admin:admin
+  AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_PASSWORDS_FILE: /opt/airflow/config/users.json
+  AIRFLOW__LOGGING__WORKER_LOG_SERVER_PORT: "8793"
+  AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+
+x-airflow: &airflow
+  image: ${AIRFLOW_IMAGE:-veritylake/airflow:local}
+  build:
+    context: .
+    dockerfile: docker/Dockerfile.airflow
+    args:
+      GIT_SHA: ${GIT_SHA:-development}
+  environment: *airflow-env
+  volumes:
+    - airflow-logs:/opt/airflow/logs
+    - airflow-config:/opt/airflow/config
+  networks: [platform]
+  logging: *logging
+  restart: unless-stopped
+
+services:
+  postgres:
+    image: postgres:16-bookworm
+    environment:
+      POSTGRES_DB: airflow
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run bootstrap}
+    volumes: ["postgres-data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [platform]
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 512m
+
+  minio:
+    image: ${STORAGE_IMAGE:-veritylake/minio:security-source}
+    build: {context: ., dockerfile: docker/Dockerfile.storage, target: server}
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Run bootstrap}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Run bootstrap}
+      MINIO_BROWSER_REDIRECT_URL: http://localhost:9001
+    volumes: ["minio-data:/data"]
+    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
+    networks: [platform]
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 768m
+    cap_drop: [ALL]
+
+  minio-init:
+    image: ${STORAGE_TOOLS_IMAGE:-veritylake/storage-tools:local}
+    build: {context: ., dockerfile: docker/Dockerfile.storage, target: tools}
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Run bootstrap}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Run bootstrap}
+      LAKE_WRITER_USER: ${LAKE_WRITER_USER:?Run bootstrap}
+      LAKE_WRITER_PASSWORD: ${LAKE_WRITER_PASSWORD:?Run bootstrap}
+      LAKE_READER_USER: ${LAKE_READER_USER:?Run bootstrap}
+      LAKE_READER_PASSWORD: ${LAKE_READER_PASSWORD:?Run bootstrap}
+      S3_BUCKET: ${S3_BUCKET:-veritylake}
+    depends_on:
+      minio: {condition: service_healthy}
+    networks: [platform]
+    logging: *logging
+    restart: "no"
+
+  chroma:
+    image: ${CHROMA_IMAGE:-chromadb/chroma:1.5.9}
+    environment: {ANONYMIZED_TELEMETRY: "False"}
+    volumes: ["chroma-data:/data"]
+    networks: [platform]
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 1g
+    # No host port: Chroma is an internal service with no public authentication boundary.
+
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:0.34.2}
+    environment:
+      OLLAMA_HOST: 0.0.0.0:11434
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
+      OLLAMA_NO_CLOUD: "true"
+    volumes: ["ollama-data:/root/.ollama"]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    networks: [platform]
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 6g
+
+  model-init:
+    image: ${APP_IMAGE:-veritylake/app:local}
+    build: {context: ., dockerfile: docker/Dockerfile}
+    command: ["python", "/app/scripts/init_models.py"]
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+      CHROMA_BASE_URL: http://chroma:8000
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-nomic-embed-text:v1.5}
+      LLM_MODEL: ${LLM_MODEL:-qwen3:4b}
+    depends_on:
+      ollama: {condition: service_healthy}
+      chroma: {condition: service_started}
+    healthcheck: {disable: true}
+    networks: [platform]
+    logging: *logging
+    restart: "no"
+
+  airflow-init:
+    <<: *airflow
+    command: ["python", "/opt/veritylake/scripts/init_airflow.py"]
+    environment:
+      <<: *airflow-env
+      AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:?Run bootstrap}
+    depends_on:
+      postgres: {condition: service_healthy}
+      minio-init: {condition: service_completed_successfully}
+    restart: "no"
+
+  airflow-api:
+    <<: *airflow
+    command: api-server
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on:
+      airflow-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/api/v2/monitor/health"]
+      interval: 20s
+      timeout: 10s
+      start_period: 40s
+      retries: 10
+    mem_limit: 1g
+
+  airflow-dag-processor:
+    <<: *airflow
+    command: dag-processor
+    depends_on:
+      airflow-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type DagProcessorJob --hostname $$HOSTNAME"]
+      interval: 30s
+      timeout: 15s
+      start_period: 40s
+      retries: 5
+    mem_limit: 768m
+
+  airflow-scheduler:
+    <<: *airflow
+    command: scheduler
+    depends_on:
+      airflow-api: {condition: service_healthy}
+      airflow-dag-processor: {condition: service_started}
+      model-init: {condition: service_completed_successfully}
+    healthcheck:
+      test: ["CMD-SHELL", "airflow jobs check --job-type SchedulerJob --hostname $$HOSTNAME"]
+      interval: 30s
+      timeout: 15s
+      start_period: 40s
+      retries: 5
+    mem_limit: 2g
+
+  api:
+    image: ${APP_IMAGE:-veritylake/app:local}
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args: {GIT_SHA: "${GIT_SHA:-development}"}
+    environment:
+      <<: *app-env
+      AWS_ACCESS_KEY_ID: ${LAKE_READER_USER:?Run bootstrap}
+      AWS_SECRET_ACCESS_KEY: ${LAKE_READER_PASSWORD:?Run bootstrap}
+      API_KEY: ${API_KEY:?Run bootstrap}
+      REQUESTS_PER_MINUTE: ${REQUESTS_PER_MINUTE:-30}
+      MAX_CONCURRENT_REQUESTS: ${MAX_CONCURRENT_REQUESTS:-2}
+    ports: ["127.0.0.1:8000:8000"]
+    depends_on:
+      minio-init: {condition: service_completed_successfully}
+      model-init: {condition: service_completed_successfully}
+    networks: [platform]
+    logging: *logging
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/tmp:size=128m,mode=1777"]
+    cap_drop: [ALL]
+    mem_limit: 1g
+
+  tools:
+    profiles: [tools]
+    image: ${APP_IMAGE:-veritylake/app:local}
+    build: {context: ., dockerfile: docker/Dockerfile}
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    entrypoint: ["veritylake"]
+    command: ["catalog"]
+    environment: *writer-env
+    volumes: ["./reports:/work/reports", "./eval:/work/eval:ro"]
+    working_dir: /work
+    healthcheck: {disable: true}
+    networks: [platform]
+    logging: *logging
+
+  prometheus:
+    profiles: [observability]
+    image: prom/prometheus:v3.5.0
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=7d"]
+    volumes: ["./ops/prometheus:/etc/prometheus:ro", "prometheus-data:/prometheus"]
+    ports: ["127.0.0.1:9090:9090"]
+    networks: [platform]
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 512m
+
+  grafana:
+    profiles: [observability]
+    image: grafana/grafana:12.3.1
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Run bootstrap}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+    volumes: ["grafana-data:/var/lib/grafana", "./ops/grafana/provisioning:/etc/grafana/provisioning:ro", "./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro"]
+    ports: ["127.0.0.1:3000:3000"]
+    depends_on: [prometheus]
+    networks: [platform]
+    logging: *logging
+    restart: unless-stopped
+    mem_limit: 512m
+
+networks:
+  platform: {driver: bridge}
+volumes:
+  postgres-data:
+  minio-data:
+  chroma-data:
+  ollama-data:
+  airflow-logs:
+  airflow-config:
+  prometheus-data:
+  grafana-data:

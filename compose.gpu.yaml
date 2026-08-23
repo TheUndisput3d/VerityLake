@@ -1,0 +1,10 @@
+# Requires the NVIDIA Container Toolkit. It is not required for the default CPU path.
+services:
+  ollama:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

@@ -1,0 +1,4 @@
+# Only for local integration tests, never expose Chroma like this on a public host.
+services:
+  chroma:
+    ports: ["127.0.0.1:8002:8000"]
