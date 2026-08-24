@@ -1,0 +1,6 @@
+bucket_name = "replace-with-your-globally-unique-veritylake-name"
+region      = "us-east-1"
+environment = "portfolio"
+# Existing role names, not access keys; trust policies are outside this module.
+# writer_role_name = "veritylake-ingestion"
+# reader_role_name = "veritylake-serving"
