@@ -1,0 +1,23 @@
+groups:
+  - name: veritylake
+    rules:
+      - alert: VerityLakeAPIDown
+        expr: up{job="veritylake-api"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "VerityLake API is not reachable", runbook: "docs/RUNBOOK.md#dependency-outage-rehearsal"}
+      - alert: VerityLakeDatasetStale
+        expr: time() - veritylake_dataset_created_timestamp_seconds > 259200
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Published dataset is older than 72 hours or absent", runbook: "docs/RUNBOOK.md#crawl-or-quality-gate-failed"}
+      - alert: VerityLakeHighErrors
+        expr: sum(rate(veritylake_http_requests_total{route="/ask",status=~"5.."}[5m])) / clamp_min(sum(rate(veritylake_http_requests_total{route="/ask"}[5m])), 0.001) > 0.05
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "RAG API dependency error ratio exceeds 5%", runbook: "docs/RUNBOOK.md#dependency-outage-rehearsal"}
+      - alert: VerityLakeSlowAnswers
+        expr: histogram_quantile(0.95, sum(rate(veritylake_http_duration_seconds_bucket{route="/ask"}[10m])) by (le)) > 120
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Observed answer p95 exceeds the example 120-second CPU budget"}
