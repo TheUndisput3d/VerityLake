@@ -1,0 +1,54 @@
+name: Deploy API to an approved host
+on:
+  workflow_dispatch:
+    inputs:
+      digest:
+        description: 'Signed API image digest, sha256:...'
+        required: true
+      version:
+        description: 'Release tag, for example v0.1.0'
+        required: true
+permissions:
+  contents: read
+  packages: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency: veritylake-production-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sigstore/cosign-installer@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify identity before remote deployment
+        env:
+          DIGEST: ${{ inputs.digest }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          [[ "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]
+          [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}-api@$DIGEST"
+          cosign verify "$IMAGE"             --certificate-identity "https://github.com/$GITHUB_REPOSITORY/.github/workflows/release.yml@refs/tags/$VERSION"             --certificate-oidc-issuer https://token.actions.githubusercontent.com
+          echo "DEPLOY_IMAGE=$IMAGE" >> "$GITHUB_ENV"
+      - name: Deploy using pinned SSH host keys
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USERNAME: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          [[ "$HOST" =~ ^[a-zA-Z0-9.-]+$ ]]
+          [[ "$USERNAME" =~ ^[a-zA-Z0-9_-]+$ ]]
+          [[ "$DEPLOY_PATH" =~ ^/[a-zA-Z0-9._/-]+$ ]]
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/id_ed25519 ~/.ssh/known_hosts
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "$USERNAME@$HOST"             "cd '$DEPLOY_PATH' && bash scripts/deploy_api.sh '$DEPLOY_IMAGE'"
+      - if: always()
+        run: rm -f ~/.ssh/id_ed25519
