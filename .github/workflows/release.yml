@@ -1,0 +1,56 @@
+name: Release signed images
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  verify:
+    uses: ./.github/workflows/ci.yml
+  images:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      matrix:
+        include:
+          - {name: api, file: docker/Dockerfile, target: runtime}
+          - {name: airflow, file: docker/Dockerfile.airflow, target: ''}
+          - {name: minio, file: docker/Dockerfile.storage, target: server}
+          - {name: storage-tools, file: docker/Dockerfile.storage, target: tools}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set image reference
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}-${{ matrix.name }}" >> "$GITHUB_ENV"
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
+          push: true
+          tags: ${{ env.IMAGE }}:${{ github.ref_name }}
+          build-args: GIT_SHA=${{ github.sha }}
+          provenance: mode=max
+          sbom: true
+      - name: Scan the exact pushed digest
+        run: |
+          docker run --rm -v "$HOME/.docker:/root/.docker:ro" aquasec/trivy:0.65.0 image             --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed "$IMAGE@${{ steps.build.outputs.digest }}"
+      - uses: sigstore/cosign-installer@v3
+      - name: Keyless sign the immutable digest
+        run: cosign sign --yes "$IMAGE@${{ steps.build.outputs.digest }}"
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
