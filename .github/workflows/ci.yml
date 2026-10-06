@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12', cache: pip}
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - run: pip install -r requirements-dev.txt -e .
       - run: python scripts/bootstrap.py
       - run: docker compose -f compose.yaml -f compose.ci.yaml config --quiet
