@@ -7,7 +7,7 @@ duckdb==1.5.5
 fastapi==0.129.2
 httpx==0.28.1
 prometheus-client==0.25.0
-pyarrow==23.0.1
+pyarrow==25.0.1
 pydantic==2.13.4
 pydantic-settings==2.14.2
 uvicorn==0.40.0
