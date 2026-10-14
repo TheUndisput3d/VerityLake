@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 # The older public MinIO image predates its October 2025 security fix.
 # Build the upstream security-fix release rather than silently using that old image.
-FROM golang:1.25-bookworm AS build
+FROM golang:1.27-bookworm AS build
 ARG MINIO_VERSION=RELEASE.2025-10-15T17-29-55Z
 ARG MC_VERSION=RELEASE.2025-08-13T08-35-41Z
 RUN git clone --depth 1 --branch ${MINIO_VERSION} https://github.com/minio/minio.git /src/minio  && cd /src/minio && CGO_ENABLED=0 go build -trimpath -o /out/minio .  && mkdir -p /out/licenses/minio /out/source  && cp LICENSE /out/licenses/minio/LICENSE  && tar --exclude=.git -czf /out/source/minio-source.tar.gz -C /src/minio .
