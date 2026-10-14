@@ -6,7 +6,7 @@ ARG MINIO_VERSION=RELEASE.2025-10-15T17-29-55Z
 ARG MC_VERSION=RELEASE.2025-08-13T08-35-41Z
 RUN git clone --depth 1 --branch ${MINIO_VERSION} https://github.com/minio/minio.git /src/minio  && cd /src/minio && CGO_ENABLED=0 go build -trimpath -o /out/minio .  && mkdir -p /out/licenses/minio /out/source  && cp LICENSE /out/licenses/minio/LICENSE  && tar --exclude=.git -czf /out/source/minio-source.tar.gz -C /src/minio .
 RUN git clone --depth 1 --branch ${MC_VERSION} https://github.com/minio/mc.git /src/mc  && cd /src/mc && CGO_ENABLED=0 go build -trimpath -o /out/mc .  && mkdir -p /out/licenses/mc  && cp LICENSE /out/licenses/mc/LICENSE  && tar --exclude=.git -czf /out/source/mc-source.tar.gz -C /src/mc .
-FROM python:3.12-slim-bookworm AS tools
+FROM python:3.14-slim-bookworm AS tools
 COPY --from=build /out/mc /usr/local/bin/mc
 COPY --from=build /out/licenses /usr/share/licenses
 COPY --from=build /out/source /usr/share/veritylake/source
@@ -14,7 +14,7 @@ COPY scripts/init_storage.py /opt/init_storage.py
 RUN useradd --uid 10001 --create-home storage
 USER 10001:10001
 ENTRYPOINT ["python", "/opt/init_storage.py"]
-FROM python:3.12-slim-bookworm AS server
+FROM python:3.14-slim-bookworm AS server
 COPY --from=build /out/minio /usr/local/bin/minio
 COPY --from=build /out/licenses /usr/share/licenses
 COPY --from=build /out/source /usr/share/veritylake/source

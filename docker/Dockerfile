@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.14-slim-bookworm AS runtime
 ARG GIT_SHA=development
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1     HOME=/home/app ANONYMIZED_TELEMETRY=False GIT_SHA=${GIT_SHA}
 WORKDIR /app
